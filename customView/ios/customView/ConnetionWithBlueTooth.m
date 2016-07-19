@@ -19,10 +19,8 @@
 @interface ConnetionWithBlueTooth () <CBPeripheralDelegate, CBCentralManagerDelegate, RCTBridgeModule>
 
 @property (nonatomic, strong) CBCentralManager *centeralManager;
-@property (nonatomic, copy) NSMutableArray *periphral;
-//@property (nonatomic, assign) BOOL SupportedBuleTooth;
-//@property (nonatomic, assign) BOOL PoweredOn;
-//@property (nonatomic, assign) BOOL unauthorized;
+@property (nonatomic, copy) NSMutableArray *periphralArray;
+@property (nonatomic, strong) CBPeripheral *connectedPeripheral;
 
 @end
 
@@ -36,11 +34,13 @@ RCT_EXPORT_MODULE();
     return self;
 }
 
+
 RCT_EXPORT_METHOD(creatCenteralManager) {
     if (!_centeralManager) {
       _centeralManager = [[CBCentralManager alloc] initWithDelegate:self queue:dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0)];
        NSLog(@"%s", __func__);
     }
+
 }
 
 RCT_EXPORT_METHOD(isPoweredOn:(RCTResponseSenderBlock)callback) {
@@ -58,7 +58,6 @@ RCT_EXPORT_METHOD(isUnauthorized:(RCTResponseSenderBlock)callback) {
 RCT_EXPORT_METHOD(searchlinkDevice) {
     // 开启的话开始扫描蓝牙设备
   [self.centeralManager scanForPeripheralsWithServices:nil options:nil];
-  NSLog(@"%s", __func__);
 //  double delayInSeconds = 20.0;
 //   // 扫描20s后未扫描到设备停止扫描
 //  dispatch_time_t popTime = dispatch_time(DISPATCH_TIME_NOW, (int64_t)(delayInSeconds * NSEC_PER_SEC));
@@ -69,21 +68,30 @@ RCT_EXPORT_METHOD(searchlinkDevice) {
 
 #pragma mark - 连接设备 -
 
-- (void)connectDiscoverPeripheral:(CBPeripheral *)peripheralDevice
+RCT_EXPORT_METHOD(connectDiscoverPeripheral:(NSString *)UUIDString)
 {
+    NSUUID *UUID = [[NSUUID alloc] initWithUUIDString:UUIDString];
+    CBPeripheral *peripheralDevice;
+    for (CBPeripheral *per in _periphralArray) {
+        if ([per.identifier isEqual:UUID]) {
+            peripheralDevice = per;
+            break;
+          }
+      }
     [self.centeralManager connectPeripheral:peripheralDevice options:nil];
+    self.connectedPeripheral = peripheralDevice;
 }
 
 #pragma mark - 断开连接 -
 
-- (void)cancelConnectPeripheral:(CBPeripheral *)peripheralDevice
+RCT_EXPORT_METHOD(cancelConnectPeripheral)
 {
-    [self.centeralManager cancelPeripheralConnection:peripheralDevice];
+    [self.centeralManager cancelPeripheralConnection:_connectedPeripheral];
 }
 
 #pragma mark - 停止扫描 -
 
-- (void)stopScan
+RCT_EXPORT_METHOD(stopScanPeripheral)
 {
     [self.centeralManager stopScan];
 }
@@ -91,21 +99,45 @@ RCT_EXPORT_METHOD(searchlinkDevice) {
 #pragma mark - 中心设备的代理方法 －
 
 - (void)centralManagerDidUpdateState:(CBCentralManager *)central {
-  NSLog(@"%s", __func__);
-  [self.bridge.eventDispatcher sendAppEventWithName:@"centralManagerStateChange" body:@{@"powerState": @(self.centeralManager.state == CBCentralManagerStatePoweredOn)}];
-  
-//  [self searchlinkDevice];
+    [self.bridge.eventDispatcher sendAppEventWithName:@"centralManagerStateChange" body:@{@"powerState": @(self.centeralManager.state == CBCentralManagerStatePoweredOn)}];
 }
 
 - (void)centralManager:(CBCentralManager *)central willRestoreState:(NSDictionary<NSString *,id> *)dict {
-  NSLog(@"%s", __func__);
+    NSLog(@"%s", __func__);
 }
 
 - (void)centralManager:(CBCentralManager *)central didDiscoverPeripheral:(nonnull CBPeripheral *)peripheral advertisementData:(nonnull NSDictionary<NSString *,id> *)advertisementData RSSI:(nonnull NSNumber *)RSSI {
-    NSString *string = @(__func__);
-    NSLog(@"%@", string);
-    [self.bridge.eventDispatcher sendAppEventWithName:@"Eventreminder" body:@{@"name": @(__func__)}];
-    NSLog(@"%s", __func__);
+  if (!_periphralArray) {
+    _periphralArray = [[NSMutableArray alloc] init];
+    [_periphralArray addObject:peripheral];
+    [self sendDiscoverPeripheralEventWithPeripheral:peripheral RSSI:RSSI];
+  } else if (_periphralArray.count < 2) {
+    [_periphralArray addObject:peripheral];
+    [self sendDiscoverPeripheralEventWithPeripheral:peripheral RSSI:RSSI];
+  } else if (([_periphralArray indexOfObject:peripheral] + 1)){
+//    _periphralArray has
+    NSLog(@"%lu", [_periphralArray indexOfObject:peripheral] + 1);
+    [_periphralArray addObject:peripheral];
+    [self sendDiscoverPeripheralEventWithPeripheral:peripheral RSSI:RSSI];
+  }
+  NSLog(@"%@", peripheral.identifier.UUIDString);
+}
+
+- (void)sendDiscoverPeripheralEventWithPeripheral:(CBPeripheral *)peripheral RSSI:(NSNumber *)RSSI {
+  
+  NSMutableDictionary *peripheralInfoDic = [[NSMutableDictionary alloc] init];
+  [peripheralInfoDic setObject:(peripheral.name ? peripheral.name : @"Unknow") forKey:@"peripheralName"];
+  [peripheralInfoDic setObject:RSSI forKey:@"peripheralRSSI"];
+  [peripheralInfoDic setObject:peripheral.identifier.UUIDString forKey:@"peripheralID"];
+  
+//  CBPeripheralStateDisconnected = 0,
+//  CBPeripheralStateConnecting = 1,
+//  CBPeripheralStateConnected = 2,
+//  CBPeripheralStateDisconnecting(NS_AVAILABLE(NA, 9_0)) = 3
+  [peripheralInfoDic setObject:@(peripheral.state) forKey:@"peripheralStateCode"];
+  
+  
+  [self.bridge.eventDispatcher sendAppEventWithName:@"discoverPeripheral" body:peripheralInfoDic];
 }
 
 - (void)centralManager:(CBCentralManager *)central didConnectPeripheral:(CBPeripheral *)peripheral {

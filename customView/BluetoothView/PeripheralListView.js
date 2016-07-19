@@ -1,45 +1,90 @@
 import React, { Component } from 'react';
+var { NativeAppEventEmitter } = require('react-native');
 import {
-	AppRegistry,
+	View,
+	Text,
 	StyleSheet,
 	ListView,
+	Navigator,
+	TouchableHighlight,
 } from 'react-native';
 
-class PeripheralListView extends Component {
+export class PeripheralListView extends Component {
+
+
 	constructor(props) {
-	  super(props);
-	
-	  this.state = {
-	  	dataSource: new ListView.DataSource(
-	  	{
-	  		rowHasChanged: (row1, row2) => row1 !== row2,
-	  	}),
-	  	// peripheralList: undefine,
-	  };
+		super(props);
+		this.state = {
+			dataSource: new ListView.DataSource({
+				rowHasChanged: (row1, row2) =>row1!==row2,
+				// bluetoothPeripheral: {},
+			}),
+		};
+		this.discoverPeripheralDeviceNotifiction ;
+
 	}
+
+
 
 	componentDidMount() {
-
+		this.discoverPeripheralDeviceNotifiction = NativeAppEventEmitter.addListener(
+		  'discoverPeripheral', (per) => {
+			//   this.state.bluetoothPeripheral.push(per)
+			console.log(per);
+			var perarr = [per];
+			console.log(perarr);
+			if (!this.bluetoothPeripheral) {
+				this.bluetoothPeripheral = [per];
+			} else {
+				this.bluetoothPeripheral.push(per);
+			}
+			this.setState({
+				dataSource: this.state.dataSource.cloneWithRows(this.bluetoothPeripheral),
+			});
+		}
+		);
 	}
 
-	fetchData() {
-		this.setState({
-			dataSource: this.state.dataSource.cloneWithRows(),
-		})
+	componentWillUnmount() {
+		this.discoverPeripheralDeviceNotifiction.remove();
 	}
 
 	render() {
-		<View style={}>
-			<ListView 
-				dataSource={ this.state.dataSource }
-				renderRow={ this.renderPeripheral }
-			/>
-		</view>
+		return (
+			<ListView
+				style={ styles.container }
+				dataSource={this.state.dataSource}
+				renderRow={this._renderRow}
+				>
+			</ListView>
+		)
 	}
 
-	renderPeripheral(peripheral) {
-		<View style={}>
-			<Text style={} > </Text>
-		</View>
+	_renderRow(peripheral) {
+		return (
+			<TouchableHighlight >
+				<Text>
+					ListViewRow renderRow. {peripheral.peripheralName + 'RSSI' + peripheral.peripheralRSSI + '   ' + peripheral.peripheralID}
+				</Text>
+			</TouchableHighlight>
+		)
 	}
+
 }
+
+
+
+const styles = StyleSheet.create({
+	container: {
+		flex: 1,
+		backgroundColor: '#F5FCFF',
+		// height: 100,
+		// width: 100,
+	},
+	text: {
+		// textAlign: center,
+	},
+})
+
+// var PeripheralListView = new PeripheralListView
+// export { PeripheralListView };

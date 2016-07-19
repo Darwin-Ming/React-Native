@@ -6,6 +6,7 @@
 
 var buletooth = require('react-native').NativeModules.ConnetionWithBlueTooth;
 var { NativeAppEventEmitter } = require('react-native');
+import { PeripheralListView } from  './BluetoothView/PeripheralListView';
 
 import React, { Component } from 'react';
 import {
@@ -14,17 +15,20 @@ import {
   Text,
   View,
   Alert,
+  Navigator,
 } from 'react-native';
 
 class customView extends Component {
- 
+
   constructor(props) {
     super(props);
     this.aaa;
     this.a;
-  
+    this.discoverPeripheralDeviceNotifiction;
+
     this.state = {
       bluetoothPowerState: false,
+      bluetoothPeripheral: {},
     };
   }
 
@@ -34,23 +38,25 @@ class customView extends Component {
       'EventReminder', (reminder) => Alert.alert(reminder.name + "aaa")
       );
     this.a = NativeAppEventEmitter.addListener(
-      'centralManagerStateChange', (powerState) => { 
-          this.state.bluetoothPowerState = powerState.powerState;  
+      'centralManagerStateChange', (powerState) => {
+          this.state.bluetoothPowerState = powerState.powerState;
           if (this.state.bluetoothPowerState) {
-            console.log(powerState.powerState + '我擦呢');
-          // if (true) {
+            console.log('powerState' + powerState.powerState);
             buletooth.searchlinkDevice();
             console.log('开始搜索周边设备');
           }
 
-          // }
        }
       );
+
+
+
+
   }
 
   componentWillUnmount() {
     this.aaa.remove();
-    this.a.remove()
+    this.a.remove();
   }
 
   startSearchPeripheralDevice() {
@@ -61,18 +67,13 @@ class customView extends Component {
 
   render() {
     return (
-      <View style={styles.container}>
-        <Text style={styles.welcome}>
-          Welcome to React Native!
-        </Text>
-        <Text style={styles.instructions}>
-          To get started, edit index.ios.js
-        </Text>
-        <Text style={styles.instructions}>
-          Press Cmd+R to reload,{'\n'}
-          Cmd+D or shake for dev menu
-        </Text>
-      </View>
+        <Navigator
+            initralRoute={{name: 'bluetooth', index: 0}}
+            renderScene={(route, navigator) =>
+                <PeripheralListView />
+                }
+        >
+        </Navigator>
     );
   }
 }
