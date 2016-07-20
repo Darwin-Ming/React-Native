@@ -21,6 +21,7 @@
 @property (nonatomic, strong) CBCentralManager *centeralManager;
 @property (nonatomic, copy) NSMutableArray *periphralArray;
 @property (nonatomic, strong) CBPeripheral *connectedPeripheral;
+@property (nonatomic, strong) CBService *connectedService;
 
 @end
 
@@ -68,7 +69,7 @@ RCT_EXPORT_METHOD(searchlinkDevice) {
 
 #pragma mark - 连接设备 -
 
-RCT_EXPORT_METHOD(connectDiscoverPeripheral:(NSString *)UUIDString)
+RCT_EXPORT_METHOD(connectPeripheral:(NSString *)UUIDString)
 {
     NSUUID *UUID = [[NSUUID alloc] initWithUUIDString:UUIDString];
     CBPeripheral *peripheralDevice;
@@ -96,6 +97,25 @@ RCT_EXPORT_METHOD(stopScanPeripheral)
     [self.centeralManager stopScan];
 }
 
+#pragma mark - 扫描服务 －
+
+RCT_EXPORT_METHOD(discoverService) {
+  [_connectedPeripheral discoverServices:nil];
+}
+
+#pragma mark  - 扫描特征值 -
+
+RCT_EXPORT_METHOD(didDiscoverCharacteristicsForService:(NSString *)serviceUUIDString) {
+  CBUUID *serviceUUID = [CBUUID UUIDWithString:serviceUUIDString];
+  for (CBService *ser in _connectedPeripheral.services) {
+    if ([ser.UUID.UUIDString isEqualToString:serviceUUIDString]) {
+      _connectedService = ser;
+      break;
+    }
+  }
+  [_connectedPeripheral discoverCharacteristics:nil forService:_connectedService];
+}
+
 #pragma mark - 中心设备的代理方法 －
 
 - (void)centralManagerDidUpdateState:(CBCentralManager *)central {
@@ -114,13 +134,10 @@ RCT_EXPORT_METHOD(stopScanPeripheral)
   } else if (_periphralArray.count < 2) {
     [_periphralArray addObject:peripheral];
     [self sendDiscoverPeripheralEventWithPeripheral:peripheral RSSI:RSSI];
-  } else if (([_periphralArray indexOfObject:peripheral] + 1)){
-//    _periphralArray has
-    NSLog(@"%lu", [_periphralArray indexOfObject:peripheral] + 1);
+  } else if (!([_periphralArray containsObject:peripheral])) {
     [_periphralArray addObject:peripheral];
     [self sendDiscoverPeripheralEventWithPeripheral:peripheral RSSI:RSSI];
   }
-  NSLog(@"%@", peripheral.identifier.UUIDString);
 }
 
 - (void)sendDiscoverPeripheralEventWithPeripheral:(CBPeripheral *)peripheral RSSI:(NSNumber *)RSSI {
@@ -137,12 +154,13 @@ RCT_EXPORT_METHOD(stopScanPeripheral)
   [peripheralInfoDic setObject:@(peripheral.state) forKey:@"peripheralStateCode"];
   
   
-  [self.bridge.eventDispatcher sendAppEventWithName:@"discoverPeripheral" body:peripheralInfoDic];
+  [self.bridge.eventDispatcher sendAppEventWithName:@"didDiscoverPeripheral" body:peripheralInfoDic];
 }
 
 - (void)centralManager:(CBCentralManager *)central didConnectPeripheral:(CBPeripheral *)peripheral {
      NSLog(@"%s", __func__);
-//    [self.bridge.eventDispatcher sendAppEventWithName:@"didConnectPeripheral" body:@{@"name": @(__func__)}];
+     [self.bridge.eventDispatcher sendAppEventWithName:@"didConnectPeripheral" body:@{@"name": peripheral.identifier.UUIDString}];
+     _connectedPeripheral = peripheral;
 }
 
 - (void)centralManager:(CBCentralManager *)central didFailToConnectPeripheral:(CBPeripheral *)peripheral error:(NSError *)error {
@@ -156,7 +174,11 @@ RCT_EXPORT_METHOD(stopScanPeripheral)
 #pragma mark - 周边设备代理方法 －
 
 - (void)peripheral:(CBPeripheral *)peripheral didDiscoverServices:(nullable NSError *)error {
-  
+  NSMutableArray *arr = [NSMutableArray new];
+  for (CBService *service in _connectedPeripheral.services) {
+    [arr addObject:service];
+  }
+  [self.bridge.eventDispatcher sendAppEventWithName:@"didDiscoverServices" body:arr];
 }
 
 - (void)peripheral:(CBPeripheral *)peripheral didReadRSSI:(NSNumber *)RSSI error:(nullable NSError *)error {
@@ -168,7 +190,16 @@ RCT_EXPORT_METHOD(stopScanPeripheral)
 }
 
 - (void)peripheral:(CBPeripheral *)peripheral didDiscoverCharacteristicsForService:(CBService *)service error:(nullable NSError *)error {
-
+//  _connectedService = service;
+  NSMutableArray *characteristicArr = [NSMutableArray new];
+  for (CBCharacteristic *characteristic in service.characteristics) {
+    NSMutableDictionary *characteristicDic = [NSMutableDictionary new];
+    [characteristicDic setObject:characteristic.UUID.UUIDString forKey:@"characteristicUUID"];
+    [characteristicDic setObject:characteristic.descriptors forKey:@"characteristicDescriptors"];
+    [characteristicDic setObject:@(characteristic.properties) forKey:@"characteristicProperties"];
+    [characteristicArr addObject:characteristicDic];
+  }
+  [self.bridge.eventDispatcher sendAppEventWithName:@"didDiscoverCharacteristics" body:characteristicArr];
 }
 
 - (void)peripheral:(CBPeripheral *)peripheral didWriteValueForCharacteristic:(CBCharacteristic *)characteristic error:(nullable NSError *)error {

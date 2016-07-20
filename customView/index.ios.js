@@ -4,9 +4,14 @@
  * @flow
  */
 
+import { PeripheralListView } from  './BluetoothView/PeripheralListView';
+import { ServiceListView } from './BluetoothView/ServiceListView';
+import { CharacteristicListView } from './BluetoothView/CharacteristicListView';
+import { CommunicationWithPeripheral } from '/BluetoothView/CommunicationWithPeripheral';
+
 var buletooth = require('react-native').NativeModules.ConnetionWithBlueTooth;
 var { NativeAppEventEmitter } = require('react-native');
-import { PeripheralListView } from  './BluetoothView/PeripheralListView';
+
 
 import React, { Component } from 'react';
 import {
@@ -22,41 +27,57 @@ class customView extends Component {
 
   constructor(props) {
     super(props);
-    this.aaa;
-    this.a;
-    this.discoverPeripheralDeviceNotifiction;
+
+    this.didDiscoverPeripheralNotification;
+    this.didConnectPeripheralNotification;
+    this.didDiscoverServicesNotification;
+    this.didDiscoverCharacteristicNotification;
+    this.centralManagerStateChangeNotification;
 
     this.state = {
       bluetoothPowerState: false,
       bluetoothPeripheral: {},
     };
+
+    buletooth.creatCenteralManager();
   }
 
   componentDidMount() {
-    buletooth.creatCenteralManager();
-    this.aaa = NativeAppEventEmitter.addListener(
-      'EventReminder', (reminder) => Alert.alert(reminder.name + "aaa")
-      );
-    this.a = NativeAppEventEmitter.addListener(
-      'centralManagerStateChange', (powerState) => {
-          this.state.bluetoothPowerState = powerState.powerState;
+    this.centralManagerStateChangeNotification = NativeAppEventEmitter.addListener(
+      'centralManagerStateChange', (bluetooth) => {
+          this.state.bluetoothPowerState = bluetooth.powerState;
           if (this.state.bluetoothPowerState) {
-            console.log('powerState' + powerState.powerState);
+            console.log('\npowerState: ' + powerState.powerState + '\n');
             buletooth.searchlinkDevice();
             console.log('开始搜索周边设备');
           }
 
        }
-      );
+    );
 
+    this.didDiscoverPeripheralNotification = NativeAppEventEmitter.addListener(
+        'didDiscoverPeripheral', () => {}
+    );
 
+    this.didConnectPeripheralNotification = NativeAppEventEmitter.addListener(
+        'didConnectPeripheral', () => {}
+    );
 
+    this.didDiscoverServicesNotifiction = NativeAppEventEmitter.addListener(
+        'didDiscoverServices', () => {}
+    );
 
+    this.didDiscoverCharacteristicNotification = NativeAppEventEmitter.addListener(
+        'didDiscoverCharacteristics', () => {}
+    );
   }
 
   componentWillUnmount() {
-    this.aaa.remove();
-    this.a.remove();
+    this.centralManagerStateChangeNotification.remove();
+    this.didDiscoverPeripheralNotification.remove();
+    this.didConnectPeripheralNotification.remove();
+    this.didDiscoverServicesNotifiction.remove();
+    this.didDiscoverCharacteristicNotification.remove();
   }
 
   startSearchPeripheralDevice() {
