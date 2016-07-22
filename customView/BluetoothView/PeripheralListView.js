@@ -1,6 +1,9 @@
 import React, { Component } from 'react';
 var bluetooth = require('react-native').NativeModules.ConnetionWithBlueTooth;
 var { NativeAppEventEmitter } = require('react-native');
+
+import { ServiceListView } from './ServiceListView';
+
 import {
 	View,
 	Text,
@@ -19,102 +22,103 @@ export class PeripheralListView extends Component {
 		super(props);
 		this.state = {
 			dataSource: new ListView.DataSource({
-				rowHasChanged: (row1, row2) =>row1!==row2,
-				// bluetoothPeripheral: {},
-				connected: false,
-				service: false,
-				characteristic: false,
-				connectedPeripheral: {},
+				rowHasChanged: (row1, row2) => row1 !== row2
 			}),
+				// bluetoothPeripheral: {},
+			connected: false,
+			service: false,
+			characteristic: false,
+			connectedPeripheral: {},
 		};
-		this.discoverPeripheralDeviceNotifiction;
+
+		this.peripherals;
+
+		this.discoverPeripheralNotifiction;
 		this.connectedPeripheralNotifiction;
 
 	}
 
-
-
 	componentDidMount() {
-		this.discoverPeripheralDeviceNotifiction = NativeAppEventEmitter.addListener(
-			'discoverPeripheral', (per) => {
-			//   this.state.bluetoothPeripheral.push(per)
-			// console.log(per);
-				var perarr = [per];
-			// console.log(perarr);
-				if (!this.bluetoothPeripheral) {
-					this.bluetoothPeripheral = [per];
+		this.discoverPeripheralNotifiction = NativeAppEventEmitter.addListener(
+			'didDiscoverPeripheral', (peripheral) => {
+				if (!this.peripherals) {
+					this.peripherals = [peripheral];
 				} else {
-					this.bluetoothPeripheral.push(per);
+					this.peripherals.push(peripheral);
 				}
 				this.setState({
-					dataSource: this.state.dataSource.cloneWithRows(this.bluetoothPeripheral),
+					dataSource: this.state.dataSource.cloneWithRows(this.peripherals),
 				});
 			}
 		);
-		this.connectedPeripheralNotifiction = NativeAppEventEmitter.addListener(
-			'didConnectPeripheral', (name) => {
-				this.setState({
-					connectedPeripheral: name.name,
-					connected: true,
-				});
-				bluetooth.discoverService();
-			}
-		)
-		this.didDiscoverServicesNotifiction = NativeAppEventEmitter.addListener(
-			'didDiscoverServices', (services) => {
-				this.setState({
-					dataSource: this.dataSource.cloneWithRows(services),
-					service: true,
-				});
-			}
-		)
+		// this.connectedPeripheralNotifiction = NativeAppEventEmitter.addListener(
+		// 	'didConnectPeripheral', (name) => {
+		// 		this.setState({
+		// 			connectedPeripheral: name.name,
+		// 			connected: true,
+		// 		});
+		// 		bluetooth.discoverService();
+		// 	}
+		// )
+		// this.didDiscoverServicesNotifiction = NativeAppEventEmitter.addListener(
+		// 	'didDiscoverServices', (services) => {
+		// 		this.setState({
+		// 			dataSource: this.dataSource.cloneWithRows(services),
+		// 			service: true,
+		// 		});
+		// 	}
+		// )
 	}
 
 	componentWillUnmount() {
-		this.discoverPeripheralDeviceNotifiction.remove();
-		this.connectedPeripheralNotifiction.remove();
+		this.discoverPeripheralNotifiction.remove();
+		// this.connectedPeripheralNotifiction.remove();
 	}
 
 	render() {
-		if (this.state.connected) {
-			return (
-				<View style={StyleSheet.container}>
-					<Text>
-						{'\nperipheralID:' + this.state.connectedPeripheral}
-					</Text>
-				</View>
-			)
-		}
+		// if (this.state.connected) {
+		// 	return (
+		// 		<View style={StyleSheet.container}>
+		// 			<Text>
+		// 				{'\nperipheralID:' + this.state.connectedPeripheral}
+		// 			</Text>
+		// 		</View>
+		// 	)
+		// }
 		return (
 			<ListView
 				style={ styles.container }
 				dataSource={this.state.dataSource}
 				renderRow={this._renderRow.bind(this)}
-				>
-			</ListView>
+			/>
 		);
 	}
 
-	connecting(rowData) {
-		console.log(rowData.peripheralID);
-		bluetooth.connectPeripheral(rowData.peripheralID);
-
-	}
 
 	_renderRow(rowData, sectionID, rowID, highlightRow) {
 		return (
 			<TouchableOpacity
 				onPress={() => {
-					this.connecting(rowData);
+					this._connecting(rowData);
 				}}
 			>
-				<View style={styles.container}>
+				<View style={styles.text}>
 					<Text style={styles.text}>
 						{'\nperipheral:  ' + rowData.peripheralName + '\nRSSI:   ' + rowData.peripheralRSSI + '\nUUID:  ' + rowData.peripheralID}
 					</Text>
 				</View>
 			</TouchableOpacity>
 		);
+	}
+
+	_connecting(rowData) {
+		console.log(rowData.peripheralID);
+		bluetooth.connectPeripheral(rowData.peripheralID);
+		this.props.navigator.push({
+			name: ServiceListView,
+			navigator: this.props.navigator,
+			// peripheralID: rowData.peripheralID,
+		});
 	}
 
 }
@@ -125,6 +129,7 @@ const styles = StyleSheet.create({
 	container: {
 		flex: 1,
 		backgroundColor: '#F5FCFF',
+		marginTop: 64,
 		// height: 100,
 		// width: 100,
 	},
