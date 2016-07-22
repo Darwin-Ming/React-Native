@@ -23,6 +23,8 @@
 		140ED2AC1D01E1AD002B40FF /* libReact.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 146834041AC3E56700842450 /* libReact.a */; };
 		146834051AC3E58100842450 /* libReact.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 146834041AC3E56700842450 /* libReact.a */; };
 		832341BD1AAA6AB300B99B32 /* libRCTText.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 832341B51AAA6A8300B99B32 /* libRCTText.a */; };
+		D661EA251D42159A00DF85C1 /* 3APPS in Resources */ = {isa = PBXBuildFile; fileRef = D661EA241D42159A00DF85C1 /* 3APPS */; };
+		D661EA271D421CC200DF85C1 /* libGSDK.a in Frameworks */ = {isa = PBXBuildFile; fileRef = D661EA261D421CC200DF85C1 /* libGSDK.a */; };
 		D66C0A9F1D38E44F003DEA91 /* ConnetionWithBlueTooth.m in Sources */ = {isa = PBXBuildFile; fileRef = D66C0A9E1D38E44F003DEA91 /* ConnetionWithBlueTooth.m */; };
 /* End PBXBuildFile section */
 
@@ -128,6 +130,8 @@
 		146833FF1AC3E56700842450 /* React.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; name = React.xcodeproj; path = "../node_modules/react-native/React/React.xcodeproj"; sourceTree = "<group>"; };
 		78C398B01ACF4ADC00677621 /* RCTLinking.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; name = RCTLinking.xcodeproj; path = "../node_modules/react-native/Libraries/LinkingIOS/RCTLinking.xcodeproj"; sourceTree = "<group>"; };
 		832341B01AAA6A8300B99B32 /* RCTText.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; name = RCTText.xcodeproj; path = "../node_modules/react-native/Libraries/Text/RCTText.xcodeproj"; sourceTree = "<group>"; };
+		D661EA241D42159A00DF85C1 /* 3APPS */ = {isa = PBXFileReference; lastKnownFileType = folder; name = 3APPS; path = customView/3APPS; sourceTree = "<group>"; };
+		D661EA261D421CC200DF85C1 /* libGSDK.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; name = libGSDK.a; path = customView/3APPS/libGSDK.a; sourceTree = "<group>"; };
 		D66C0A9D1D38E44F003DEA91 /* ConnetionWithBlueTooth.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; name = ConnetionWithBlueTooth.h; path = customView/ConnetionWithBlueTooth.h; sourceTree = "<group>"; };
 		D66C0A9E1D38E44F003DEA91 /* ConnetionWithBlueTooth.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; name = ConnetionWithBlueTooth.m; path = customView/ConnetionWithBlueTooth.m; sourceTree = "<group>"; };
 /* End PBXFileReference section */
@@ -145,6 +149,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				D661EA271D421CC200DF85C1 /* libGSDK.a in Frameworks */,
 				146834051AC3E58100842450 /* libReact.a in Frameworks */,
 				00C302E51ABCBA2D00DB3ED1 /* libRCTActionSheet.a in Frameworks */,
 				00C302E71ABCBA2D00DB3ED1 /* libRCTGeolocation.a in Frameworks */,
@@ -294,6 +299,8 @@
 		83CBB9F61A601CBA00E9B192 = {
 			isa = PBXGroup;
 			children = (
+				D661EA261D421CC200DF85C1 /* libGSDK.a */,
+				D661EA241D42159A00DF85C1 /* 3APPS */,
 				13B07FAE1A68108700A75B9A /* customView */,
 				832341AE1AAA6A7D00B99B32 /* Libraries */,
 				00E356EF1AD99517003FC87E /* customViewTests */,
@@ -515,6 +522,7 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				D661EA251D42159A00DF85C1 /* 3APPS in Resources */,
 				13B07FBF1A68108700A75B9A /* Images.xcassets in Resources */,
 				13B07FBD1A68108700A75B9A /* LaunchScreen.xib in Resources */,
 			);
@@ -618,6 +626,7 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
 				DEAD_CODE_STRIPPING = NO;
+				ENABLE_BITCODE = NO;
 				HEADER_SEARCH_PATHS = (
 					"$(inherited)",
 					/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/include,
@@ -625,6 +634,10 @@
 				);
 				INFOPLIST_FILE = customView/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks";
+				LIBRARY_SEARCH_PATHS = (
+					"$(inherited)",
+					"$(PROJECT_DIR)/customView/3APPS",
+				);
 				OTHER_LDFLAGS = (
 					"$(inherited)",
 					"-ObjC",
@@ -640,6 +653,7 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
+				ENABLE_BITCODE = NO;
 				HEADER_SEARCH_PATHS = (
 					"$(inherited)",
 					/Applications/Xcode.app/Contents/Developer/Toolchains/XcodeDefault.xctoolchain/usr/include,
@@ -647,6 +661,10 @@
 				);
 				INFOPLIST_FILE = customView/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks";
+				LIBRARY_SEARCH_PATHS = (
+					"$(inherited)",
+					"$(PROJECT_DIR)/customView/3APPS",
+				);
 				OTHER_LDFLAGS = (
 					"$(inherited)",
 					"-ObjC",

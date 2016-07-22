@@ -8,6 +8,8 @@
 
 #import "ConnetionWithBlueTooth.h"
 
+#import "3APPS/include/EscCommand.h"
+
 #import <CoreBluetooth/CoreBluetooth.h>
 
 #import "RCTBridgeModule.h"
@@ -116,6 +118,47 @@ RCT_EXPORT_METHOD(didDiscoverCharacteristicsForService:(NSString *)serviceUUIDSt
   [_connectedPeripheral discoverCharacteristics:nil forService:_connectedService];
 }
 
+#pragma mark - 传输数据给特征值 - 
+
+RCT_EXPORT_METHOD(writeValueForDescriptor:(NSString *)characteristicUUIDString Data:(NSString *)wirteString) {
+  
+  CBUUID *characteristicUUID = [CBUUID UUIDWithString:characteristicUUIDString];
+  CBCharacteristic *wirteCharacteristic;
+  for (CBCharacteristic *characteristic in _connectedService.characteristics) {
+    if ([characteristic.UUID isEqual:characteristicUUID]) {
+      wirteCharacteristic = characteristic;
+    }
+  }
+  
+
+  
+  EscCommand *escCommand = [[EscCommand alloc] init];
+  [escCommand addInitializePrinter];
+//  [escCommand addSetReverseMode:1];
+  [escCommand addSetJustification:1];
+  [escCommand addText:@"ESC Print Hello \r\n"];
+  [escCommand addText:@"ESC Print Hello \r\n"];
+  [escCommand addText:@"ESC Print Hello \r\n"];
+  [escCommand addText:@"ESC Print Hello \r\n"];
+   [escCommand addText:@"\r\n"];
+  [escCommand addText:@"ESC Print Hello \r\n"];
+  [escCommand addSetJustification:0];
+  [escCommand addText:@"ESC Print Hello \r\n"];
+  [escCommand addSetJustification:2];
+  [escCommand addText:@"ESC Print Hello \r\n"];
+  [escCommand addText:@"ESC Print Hello \r\n"];
+  [escCommand addPrintMode:0X1B];
+  [escCommand addPrintAndFeedLines:8];
+  [escCommand addCutPaper:1];
+  
+  
+  
+  //  NSData *wirteData = [wirteString dataUsingEncoding:NSUTF8StringEncoding];
+  
+  
+  [_connectedPeripheral writeValue:[escCommand getCommand] forCharacteristic:wirteCharacteristic type:CBCharacteristicWriteWithoutResponse];
+}
+
 #pragma mark - 中心设备的代理方法 －
 
 - (void)centralManagerDidUpdateState:(CBCentralManager *)central {
@@ -146,21 +189,20 @@ RCT_EXPORT_METHOD(didDiscoverCharacteristicsForService:(NSString *)serviceUUIDSt
   [peripheralInfoDic setObject:(peripheral.name ? peripheral.name : @"Unknow") forKey:@"peripheralName"];
   [peripheralInfoDic setObject:RSSI forKey:@"peripheralRSSI"];
   [peripheralInfoDic setObject:peripheral.identifier.UUIDString forKey:@"peripheralID"];
-  
+  [peripheralInfoDic setObject:@(peripheral.state) forKey:@"peripheralStateCode"];
 //  CBPeripheralStateDisconnected = 0,
 //  CBPeripheralStateConnecting = 1,
 //  CBPeripheralStateConnected = 2,
 //  CBPeripheralStateDisconnecting(NS_AVAILABLE(NA, 9_0)) = 3
-  [peripheralInfoDic setObject:@(peripheral.state) forKey:@"peripheralStateCode"];
-  
   
   [self.bridge.eventDispatcher sendAppEventWithName:@"didDiscoverPeripheral" body:peripheralInfoDic];
 }
 
 - (void)centralManager:(CBCentralManager *)central didConnectPeripheral:(CBPeripheral *)peripheral {
      NSLog(@"%s", __func__);
-     [self.bridge.eventDispatcher sendAppEventWithName:@"didConnectPeripheral" body:@{@"name": peripheral.identifier.UUIDString}];
-     _connectedPeripheral = peripheral;
+  [self.bridge.eventDispatcher sendAppEventWithName:@"didConnectPeripheral" body:@{@"peripheralUUID": peripheral.identifier.UUIDString, @"peripheralName": (peripheral.name ? peripheral.name : @"Unknown")}];
+  _connectedPeripheral = peripheral;
+  _connectedPeripheral.delegate = self;
 }
 
 - (void)centralManager:(CBCentralManager *)central didFailToConnectPeripheral:(CBPeripheral *)peripheral error:(NSError *)error {
@@ -176,8 +218,12 @@ RCT_EXPORT_METHOD(didDiscoverCharacteristicsForService:(NSString *)serviceUUIDSt
 - (void)peripheral:(CBPeripheral *)peripheral didDiscoverServices:(nullable NSError *)error {
   NSMutableArray *arr = [NSMutableArray new];
   for (CBService *service in _connectedPeripheral.services) {
-    [arr addObject:service];
+    NSMutableDictionary *serviceDic = [NSMutableDictionary new];
+    [serviceDic setObject:service.UUID.UUIDString forKey:@"serviceUUID"];
+    [serviceDic setObject:(service.characteristics ? service.characteristics : [NSArray new]) forKey:@"serviceCharacteristics"];
+    [arr addObject:serviceDic];
   }
+  NSLog(@"%s", __func__);
   [self.bridge.eventDispatcher sendAppEventWithName:@"didDiscoverServices" body:arr];
 }
 
@@ -195,7 +241,7 @@ RCT_EXPORT_METHOD(didDiscoverCharacteristicsForService:(NSString *)serviceUUIDSt
   for (CBCharacteristic *characteristic in service.characteristics) {
     NSMutableDictionary *characteristicDic = [NSMutableDictionary new];
     [characteristicDic setObject:characteristic.UUID.UUIDString forKey:@"characteristicUUID"];
-    [characteristicDic setObject:characteristic.descriptors forKey:@"characteristicDescriptors"];
+    [characteristicDic setObject:(characteristic.descriptors[0].value ? characteristic.descriptors[0].value : [NSString string])  forKey:@"characteristicDescriptors"];
     [characteristicDic setObject:@(characteristic.properties) forKey:@"characteristicProperties"];
     [characteristicArr addObject:characteristicDic];
   }

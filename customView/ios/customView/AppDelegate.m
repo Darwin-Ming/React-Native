@@ -20,7 +20,7 @@
 
   [[RCTBundleURLProvider sharedSettings] setDefaults];
   [[RCTBundleURLProvider sharedSettings] setEnableLiveReload:YES];
-  [[RCTBundleURLProvider sharedSettings] setJsLocation:@"192.168.188.93"];
+  [[RCTBundleURLProvider sharedSettings] setJsLocation:@"192.168.3.72"];
   jsCodeLocation = [[RCTBundleURLProvider sharedSettings] jsBundleURLForBundleRoot:@"index.ios" fallbackResource:nil];
 
   RCTRootView *rootView = [[RCTRootView alloc] initWithBundleURL:jsCodeLocation
